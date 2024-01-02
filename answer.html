@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>간단한 할 일 목록</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h2 class="text-center mb-4">할 일 목록</h2>
+        <!-- 할 일 추가 폼 -->
+        <form class="form-inline mb-4">
+            <input id="todo-val" type="text" class="form-control mr-2" placeholder="새 할 일">
+            <button type="button" class="btn btn-primary" onclick="makeTodo()">할 일 추가</button>
+        </form>
+        ​
+        <!-- 할 일 목록 -->
+        <ul id="todo-list" class="list-group">
+            <!-- 예시 할 일 (기본 상태) -->
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                할 일 1
+                <span>
+                    <button class="btn btn-success btn-sm mr-1" onclick="completeTodo()">완료</button>
+                    <button class="btn btn-secondary btn-sm mr-1" onclick="editTodo()">수정</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteTodo()">삭제</button>
+                </span>
+            </li>
+
+            <!-- 예시 할 일 (완료 상태) -->
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <del>할 일 2 (완료)</del>
+                <span>
+                    <button class="btn btn-secondary btn-sm mr-1">수정</button>
+                    <button class="btn btn-danger btn-sm">삭제</button>
+                </span>
+            </li>
+            ​
+            <!-- 예시 할 일 (수정 상태) -->
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <form class="form-inline">
+                    <input type="text" class="form-control mr-2" value="할 일 3 (수정)">
+                    <button type="submit" class="btn btn-secondary btn-sm mr-1">업데이트</button>
+                </form>
+                <button class="btn btn-danger btn-sm">삭제</button>
+            </li>
+            <!-- 추가 할 일이 여기에 추가됩니다 -->
+        </ul>
+    </div>
+
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.js"
+        integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <script>
+        $(document).ready(function () {
+            readTodo()
+        })
+        function readTodo() {
+            fetch('/api/jungle/todo').then(res => res.json()).then(data => {
+                $("#todo-list").empty()
+                console.log(data)
+                data.all_todo.forEach((row) => {
+                    console.log(row)
+                    let temp_html = ``
+                    if (row.done === false) {
+                        temp_html = `<li id="${row._id}" class="list-group-item d-flex justify-content-between align-items-center">
+                                            ${row.todo}
+                                            <span>
+                                                <button class="btn btn-success btn-sm mr-1" onclick="completeTodo('${row._id}')">완료</button>
+                                                <button class="btn btn-secondary btn-sm mr-1" onclick="editTodo('${row._id}')">수정</button>
+                                                <button class="btn btn-danger btn-sm" onclick="deleteTodo('${row._id}')">삭제</button>
+                                            </span>
+                                        </li>`
+                        $("#todo-list").append(temp_html)
+                    }
+                    else if (row.done === true) {
+                        temp_html = `<li id="${row._id}" class="list-group-item d-flex justify-content-between align-items-center">
+                                            <del>${row.todo}</del>
+                                            <span>
+                                                <button class="btn btn-danger btn-sm" onclick="deleteTodo('${row._id}')">삭제</button>
+                                                </span>
+                                                </li>`
+                        $("#todo-list").append(temp_html)
+                    }
+                })
+            })
+        }
+        function makeTodo() {
+            let todo = $("#todo-val").val()
+            let formData = new FormData()
+            formData.append("todo", todo)
+            fetch('/api/jungle/todo', {
+                method: "POST",
+                body: formData
+            }).then(res => res.json()).then(data => {
+                alert(data.msg)
+                window.location.reload()
+            })
+        }
+        function completeTodo(_id) {
+            let formData = new FormData()
+            formData.append("_id", _id)
+            fetch('/api/jungle/todo/complete', {
+                method: "POST",
+                body: formData
+            }).then(res => res.json()).then(data => {
+                alert(data.msg)
+                window.location.reload()
+            })
+        }
+        function editTodo(_id) {
+            $(`#${_id}`).empty()
+            let temp_html = `<form class="form-inline">
+                            <input id="update-val" type="text" class="form-control mr-2" placeholder="수정할 내용을 작성해주세요">
+                            <button type="button" class="btn btn-secondary btn-sm mr-1" onclick="updateTodo('${_id}')">업데이트</button>
+                            <button class="btn btn-warning btn-sm">취소</button>
+                            </form>`
+            $(`#${_id}`).append(temp_html)
+        }
+        function updateTodo(_id){
+            let todo = $("#update-val").val()
+            let formData = new FormData()
+            formData.append("_id", _id)
+            formData.append("todo", todo)
+            fetch('/api/jungle/todo/update', {
+                method : "POST",
+                body : formData
+            }).then(res => res.json()).then(data => {
+                alert(data.msg)
+                window.location.reload()
+            })
+        }
+        function deleteTodo(_id){
+            let formData = new FormData()
+            formData.append("_id", _id)
+            fetch('/api/jungle/todo/delete', {
+                method : "POST",
+                body : formData
+            }).then(res => res.json()).then(data => {
+                alert(data.msg)
+                window.location.reload()
+            })
+        }
+    </script>
+</body>
+
+</html>
